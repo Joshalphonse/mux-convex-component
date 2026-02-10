@@ -1,28 +1,49 @@
 {
   "name": "convex-mux-component",
-  "version": "0.1.0",
+  "version": "0.1.6",
   "description": "Convex Component for syncing Mux video data and app metadata.",
   "type": "module",
-  "private": true,
+  "keywords": [
+    "convex",
+    "mux",
+    "component",
+    "video"
+  ],
   "files": [
     "README.md",
     "convex.config.ts",
     "schema.ts",
     "sync.ts",
-    "mux.node.ts",
     "videos.ts",
-    "catalog.ts"
+    "catalog.ts",
+    "_generated/api.ts",
+    "_generated/server.ts",
+    "_generated/dataModel.ts"
   ],
   "exports": {
     "./convex.config": "./convex.config.ts",
+    "./convex.config.js": "./convex.config.ts",
     "./schema": "./schema.ts",
-    "./mux.node": "./mux.node.ts",
+    "./schema.js": "./schema.ts",
+    "./sync": "./sync.ts",
+    "./sync.js": "./sync.ts",
     "./videos": "./videos.ts",
-    "./catalog": "./catalog.ts"
+    "./videos.js": "./videos.ts",
+    "./catalog": "./catalog.ts",
+    "./catalog.js": "./catalog.ts",
+    "./_generated/api": "./_generated/api.ts",
+    "./_generated/api.js": "./_generated/api.ts",
+    "./_generated/server": "./_generated/server.ts",
+    "./_generated/server.js": "./_generated/server.ts",
+    "./_generated/dataModel": "./_generated/dataModel.ts",
+    "./_generated/dataModel.js": "./_generated/dataModel.ts"
   },
   "scripts": {
     "codegen": "convex codegen --component-dir .",
     "typecheck": "convex codegen --component-dir . && tsc --noEmit"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "dependencies": {
     "@mux/mux-node": "^9.0.0",

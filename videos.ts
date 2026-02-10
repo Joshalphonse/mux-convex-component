@@ -47,6 +47,7 @@ export const upsertVideoMetadata = mutation({
       userId: args.userId,
       createdAtMs: now,
       ...patchDoc,
+      updatedAtMs: now,
     });
   },
 });

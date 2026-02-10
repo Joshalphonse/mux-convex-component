@@ -1,0 +1,23 @@
+{
+  "name": "convex-mux-init",
+  "version": "0.1.0",
+  "description": "Scaffold app-level Convex wrappers for convex-mux-component.",
+  "type": "module",
+  "bin": {
+    "convex-mux-init": "bin/convex-mux-init.mjs"
+  },
+  "files": [
+    "bin/convex-mux-init.mjs",
+    "README.md"
+  ],
+  "keywords": [
+    "convex",
+    "mux",
+    "scaffold",
+    "component"
+  ],
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -2,7 +2,7 @@
 
 import Mux from "@mux/mux-node";
 import { v } from "convex/values";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { action } from "./_generated/server";
 
 type JsonObject = Record<string, unknown>;
@@ -66,7 +66,9 @@ export const createAsset = action({
   },
   handler: async (ctx, args) => {
     const mux = createMuxClient(args);
-    const asset = await mux.video.assets.create(args.params);
+    const asset = await mux.video.assets.create(
+      args.params as unknown as Parameters<typeof mux.video.assets.create>[0]
+    );
     await ctx.runMutation(internal.sync.upsertAssetFromPayload, { asset });
     return asset;
   },
@@ -80,7 +82,9 @@ export const createDirectUpload = action({
   },
   handler: async (ctx, args) => {
     const mux = createMuxClient(args);
-    const upload = await mux.video.uploads.create(args.params ?? {});
+    const upload = await mux.video.uploads.create(
+      (args.params ?? {}) as unknown as Parameters<typeof mux.video.uploads.create>[0]
+    );
     await ctx.runMutation(internal.sync.upsertUploadFromPayload, { upload });
     return upload;
   },
@@ -94,7 +98,11 @@ export const createLiveStream = action({
   },
   handler: async (ctx, args) => {
     const mux = createMuxClient(args);
-    const liveStream = await mux.video.liveStreams.create(args.params ?? {});
+    const liveStream = await mux.video.liveStreams.create(
+      (args.params ?? {}) as unknown as Parameters<
+        typeof mux.video.liveStreams.create
+      >[0]
+    );
     await ctx.runMutation(internal.sync.upsertLiveStreamFromPayload, { liveStream });
     return liveStream;
   },
@@ -139,6 +147,63 @@ export const syncLiveStreamById = action({
     const liveStream = await mux.video.liveStreams.retrieve(args.muxLiveStreamId);
     await ctx.runMutation(internal.sync.upsertLiveStreamFromPayload, { liveStream });
     return liveStream;
+  },
+});
+
+export const backfillAssets = action({
+  args: {
+    muxTokenId: v.string(),
+    muxTokenSecret: v.string(),
+    maxAssets: v.optional(v.number()),
+    includeVideoMetadata: v.optional(v.boolean()),
+    defaultUserId: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const mux = createMuxClient(args);
+    const maxAssets = Math.max(1, Math.floor(args.maxAssets ?? 200));
+    const includeVideoMetadata = args.includeVideoMetadata ?? true;
+
+    let scanned = 0;
+    let syncedAssets = 0;
+    let metadataUpserts = 0;
+    let missingUserId = 0;
+
+    for await (const asset of mux.video.assets.list({ limit: 100 })) {
+      if (scanned >= maxAssets) break;
+      scanned += 1;
+
+      const assetObj = asset as unknown as Record<string, unknown>;
+      const muxAssetId = asString(assetObj.id);
+      if (!muxAssetId) continue;
+
+      await ctx.runMutation(internal.sync.upsertAssetFromPayload, {
+        asset: assetObj,
+      });
+      syncedAssets += 1;
+
+      if (!includeVideoMetadata) continue;
+
+      const passthroughUserId = asString(assetObj.passthrough);
+      const userId = passthroughUserId ?? args.defaultUserId;
+
+      if (!userId) {
+        missingUserId += 1;
+        continue;
+      }
+
+      await ctx.runMutation(api.videos.upsertVideoMetadata, {
+        muxAssetId,
+        userId,
+      });
+      metadataUpserts += 1;
+    }
+
+    return {
+      scanned,
+      syncedAssets,
+      metadataUpserts,
+      missingUserId,
+    };
   },
 });
 
