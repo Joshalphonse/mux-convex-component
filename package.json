@@ -46,7 +46,7 @@
     "access": "public"
   },
   "dependencies": {
-    "@mux/mux-node": "^9.0.0",
+    "@mux/mux-node": "^12.8.1",
     "convex": "^1.20.0"
   },
   "devDependencies": {
