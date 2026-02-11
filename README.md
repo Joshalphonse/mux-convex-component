@@ -26,21 +26,7 @@ This package gives you:
 npm i convex-mux-component convex-mux-init @mux/mux-node
 ```
 
-## 2) Mount the component
-
-Create or update `convex/convex.config.ts`:
-
-```ts
-import { defineApp } from "convex/server";
-import mux from "convex-mux-component/convex.config.js";
-
-const app = defineApp();
-app.use(mux, { name: "mux" });
-
-export default app;
-```
-
-## 3) Generate app-level wrappers
+## 2) Generate app-level Convex files
 
 ```sh
 npx convex-mux-init --component-name mux
@@ -48,57 +34,28 @@ npx convex-mux-init --component-name mux
 
 This creates:
 
+- `convex/convex.config.ts`
 - `convex/migrations.ts`
 - `convex/muxWebhook.node.ts`
+- `convex/http.ts`
 
-## 4) Add webhook HTTP route
+If files already exist, the CLI skips them unless you pass `--force`.
 
-Create or update `convex/http.ts`:
-
-```ts
-import { httpRouter } from "convex/server";
-import { httpAction } from "./_generated/server";
-import { internal } from "./_generated/api";
-
-const http = httpRouter();
-
-http.route({
-  path: "/mux/webhook",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    const rawBody = await request.text();
-    const headers: Record<string, string> = {};
-    request.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
-    const result = await ctx.runAction(internal.muxWebhook.ingestMuxWebhook, {
-      rawBody,
-      headers,
-    });
-    return new Response(JSON.stringify(result), {
-      headers: { "content-type": "application/json" },
-    });
-  }),
-});
-
-export default http;
-```
-
-## 5) Set Mux API env vars in Convex
+## 3) Set Mux API env vars in Convex
 
 ```sh
 npx convex env set MUX_TOKEN_ID <your_mux_token_id>
 npx convex env set MUX_TOKEN_SECRET <your_mux_token_secret>
 ```
 
-## 6) Start Convex and run backfill
+## 4) Start Convex and run backfill
 
 ```sh
 npx convex dev
 npx convex run migrations:backfillMux '{}'
 ```
 
-## 7) Configure Mux webhook endpoint
+## 5) Configure Mux webhook endpoint
 
 In Mux dashboard, create a webhook endpoint:
 
@@ -111,7 +68,7 @@ Copy the webhook signing secret and set it in Convex:
 npx convex env set MUX_WEBHOOK_SECRET <your_mux_webhook_secret>
 ```
 
-## 8) Verify data in Convex dashboard
+## 6) Verify data in Convex dashboard
 
 Tables to check:
 
@@ -168,8 +125,8 @@ npx convex run --prod migrations:backfillMux '{"maxAssets":500}'
 Use this order when automating setup:
 
 1. `npm i convex-mux-component convex-mux-init @mux/mux-node`
-2. Ensure `convex/convex.config.ts` mounts `convex-mux-component/convex.config.js`
-3. Run `npx convex-mux-init --component-name <mounted_name> --force`
+2. Run `npx convex-mux-init --component-name <mounted_name> --force`
+3. Ensure `convex/convex.config.ts` mounts `convex-mux-component/convex.config.js` with the same `<mounted_name>`
 4. Ensure `convex/http.ts` routes `POST /mux/webhook` to `internal.muxWebhook.ingestMuxWebhook`
 5. Set `MUX_TOKEN_ID` and `MUX_TOKEN_SECRET`
 6. Run `npx convex dev`

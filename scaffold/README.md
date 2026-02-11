@@ -9,8 +9,10 @@ for backfills and webhooks belong in the consuming app.
 
 This CLI creates those app files for you:
 
+- `convex/convex.config.ts`
 - `convex/migrations.ts`
 - `convex/muxWebhook.node.ts`
+- `convex/http.ts`
 
 ## Usage
 
@@ -25,6 +27,8 @@ Options:
 ```sh
 npx convex-mux-init --component-name mux
 npx convex-mux-init --force
+npx convex-mux-init --skip-config
+npx convex-mux-init --skip-http
 npx convex-mux-init --skip-migration
 npx convex-mux-init --skip-webhook
 ```
@@ -37,8 +41,7 @@ npx convex-mux-init --skip-webhook
 npm i @mux/mux-node
 ```
 
-2. Add your webhook route in `convex/http.ts` (the CLI prints a snippet).
-3. Set env vars in Convex:
+2. Set env vars in Convex:
 
 ```sh
 npx convex env set MUX_TOKEN_ID <id>
@@ -46,7 +49,7 @@ npx convex env set MUX_TOKEN_SECRET <secret>
 npx convex env set MUX_WEBHOOK_SECRET <secret>
 ```
 
-4. Run:
+3. Run:
 
 ```sh
 npx convex dev

@@ -9,6 +9,8 @@ let componentName = "mux";
 let force = false;
 let skipMigration = false;
 let skipWebhook = false;
+let skipConfig = false;
+let skipHttp = false;
 
 function printHelp() {
   console.log(`convex-mux-init
@@ -21,6 +23,8 @@ Usage:
 Options:
   --component-name <name>  Mounted component name in convex.config.ts (default: mux)
   --force                  Overwrite existing files
+  --skip-config            Do not create convex/convex.config.ts
+  --skip-http              Do not create convex/http.ts
   --skip-migration         Do not create convex/migrations.ts
   --skip-webhook           Do not create convex/muxWebhook.node.ts
   -h, --help               Show help
@@ -37,6 +41,10 @@ for (let i = 0; i < args.length; i += 1) {
     i += 1;
   } else if (arg === "--force") {
     force = true;
+  } else if (arg === "--skip-config") {
+    skipConfig = true;
+  } else if (arg === "--skip-http") {
+    skipHttp = true;
   } else if (arg === "--skip-migration") {
     skipMigration = true;
   } else if (arg === "--skip-webhook") {
@@ -137,6 +145,17 @@ export const backfillMux = action({
     return { scanned, syncedAssets, metadataUpserts, missingUserId };
   },
 });
+`;
+}
+
+function convexConfigTemplate(name) {
+  return `import { defineApp } from "convex/server";
+import mux from "convex-mux-component/convex.config.js";
+
+const app = defineApp();
+app.use(mux, { name: "${name}" });
+
+export default app;
 `;
 }
 
@@ -246,31 +265,8 @@ export const ingestMuxWebhook = internalAction({
 `;
 }
 
-let wroteAny = false;
-
-if (!skipMigration) {
-  wroteAny =
-    writeFile("migrations.ts", migrationsTemplate(componentName)) || wroteAny;
-}
-
-if (!skipWebhook) {
-  wroteAny =
-    writeFile("muxWebhook.node.ts", webhookTemplate(componentName)) || wroteAny;
-}
-
-if (!wroteAny) {
-  console.log("No files changed.");
-}
-
-console.log(`
-Next steps:
-
-1) Install Mux SDK in your app
-   npm i @mux/mux-node
-
-2) Add this route in convex/http.ts
-
-import { httpRouter } from "convex/server";
+function httpTemplate() {
+  return `import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 
@@ -285,10 +281,12 @@ http.route({
     request.headers.forEach((value, key) => {
       headers[key] = value;
     });
+
     const result = await ctx.runAction(internal.muxWebhook.ingestMuxWebhook, {
       rawBody,
       headers,
     });
+
     return new Response(JSON.stringify(result), {
       headers: { "content-type": "application/json" },
     });
@@ -296,13 +294,65 @@ http.route({
 });
 
 export default http;
+`;
+}
 
-3) Set env vars in Convex
+let wroteAny = false;
+
+if (!skipConfig) {
+  wroteAny =
+    writeFile("convex.config.ts", convexConfigTemplate(componentName)) ||
+    wroteAny;
+}
+
+if (!skipMigration) {
+  wroteAny =
+    writeFile("migrations.ts", migrationsTemplate(componentName)) || wroteAny;
+}
+
+if (!skipWebhook) {
+  wroteAny =
+    writeFile("muxWebhook.node.ts", webhookTemplate(componentName)) || wroteAny;
+}
+
+if (!skipHttp) {
+  const webhookImplementationExists =
+    !skipWebhook || fs.existsSync(path.join(convexDir, "muxWebhook.node.ts"));
+
+  if (!webhookImplementationExists) {
+    console.log(
+      "skip convex/http.ts (--skip-webhook used and convex/muxWebhook.node.ts was not found)",
+    );
+  } else {
+    wroteAny = writeFile("http.ts", httpTemplate()) || wroteAny;
+  }
+}
+
+if (!wroteAny) {
+  console.log("No files changed.");
+}
+
+const nextSteps = [];
+nextSteps.push(`Install Mux SDK in your app
+   npm i @mux/mux-node`);
+if (skipConfig) {
+  nextSteps.push(`Ensure convex/convex.config.ts mounts convex-mux-component`);
+}
+if (skipHttp) {
+  nextSteps.push(
+    `Ensure convex/http.ts routes POST /mux/webhook to internal.muxWebhook.ingestMuxWebhook`,
+  );
+}
+nextSteps.push(`Set env vars in Convex
    npx convex env set MUX_TOKEN_ID <id>
    npx convex env set MUX_TOKEN_SECRET <secret>
-   npx convex env set MUX_WEBHOOK_SECRET <secret>
-
-4) Run
+   npx convex env set MUX_WEBHOOK_SECRET <secret>`);
+nextSteps.push(`Run
    npx convex dev
-   npx convex run migrations:backfillMux '{}'
+   npx convex run migrations:backfillMux '{}'`);
+
+console.log(`
+Next steps:
+
+${nextSteps.map((step, index) => `${index + 1}) ${step}`).join("\n\n")}
 `);
