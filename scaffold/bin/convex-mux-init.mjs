@@ -50,7 +50,7 @@ for (let i = 0; i < args.length; i += 1) {
 
 if (!/^[A-Za-z][A-Za-z0-9_]*$/.test(componentName)) {
   console.error(
-    `Invalid --component-name "${componentName}". Use letters, numbers, and underscores, starting with a letter.`
+    `Invalid --component-name "${componentName}". Use letters, numbers, and underscores, starting with a letter.`,
   );
   process.exit(1);
 }
@@ -59,7 +59,9 @@ const cwd = process.cwd();
 const convexDir = path.join(cwd, "convex");
 
 if (!fs.existsSync(convexDir) || !fs.statSync(convexDir).isDirectory()) {
-  console.error("Could not find ./convex directory. Run this in your app root.");
+  console.error(
+    "Could not find ./convex directory. Run this in your app root.",
+  );
   process.exit(1);
 }
 
@@ -142,7 +144,7 @@ function webhookTemplate(name) {
   return `"use node";
 
 import Mux from "@mux/mux-node";
-import { action } from "./_generated/server";
+import { internalAction } from "./_generated/server";
 import { components } from "./_generated/api";
 import { v } from "convex/values";
 
@@ -171,7 +173,7 @@ function normalizeHeaders(headers: Record<string, string>): Record<string, strin
   return normalized;
 }
 
-export const ingestMuxWebhook = action({
+export const ingestMuxWebhook = internalAction({
   args: {
     rawBody: v.string(),
     headers: v.record(v.string(), v.string()),
@@ -247,11 +249,13 @@ export const ingestMuxWebhook = action({
 let wroteAny = false;
 
 if (!skipMigration) {
-  wroteAny = writeFile("migrations.ts", migrationsTemplate(componentName)) || wroteAny;
+  wroteAny =
+    writeFile("migrations.ts", migrationsTemplate(componentName)) || wroteAny;
 }
 
 if (!skipWebhook) {
-  wroteAny = writeFile("muxWebhook.node.ts", webhookTemplate(componentName)) || wroteAny;
+  wroteAny =
+    writeFile("muxWebhook.node.ts", webhookTemplate(componentName)) || wroteAny;
 }
 
 if (!wroteAny) {
@@ -277,7 +281,10 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const rawBody = await request.text();
-    const headers = Object.fromEntries(request.headers.entries());
+    const headers: Record<string, string> = {};
+    request.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
     const result = await ctx.runAction(internal.muxWebhook.ingestMuxWebhook, {
       rawBody,
       headers,

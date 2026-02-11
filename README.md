@@ -67,7 +67,10 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     const rawBody = await request.text();
-    const headers = Object.fromEntries(request.headers.entries());
+    const headers: Record<string, string> = {};
+    request.headers.forEach((value, key) => {
+      headers[key] = value;
+    });
     const result = await ctx.runAction(internal.muxWebhook.ingestMuxWebhook, {
       rawBody,
       headers,
@@ -178,4 +181,6 @@ Use this order when automating setup:
 - `Could not find function for 'migrations:backfillMux'`: Ensure `convex/migrations.ts` exists, exports `backfillMux`, then run `npx convex dev`.
 - `InvalidReference ... does not export [mux_node.backfillAssets]`: Do not call `components.<name>.mux_node.*`; use app-level wrappers from `convex-mux-init`.
 - `TypeScript ... webhooks.unwrap ... Record<string, unknown>`: Regenerate wrappers with `--force` using latest `convex-mux-init`; expected cast is `as unknown as Record<string, unknown>`.
+- `TypeScript ... request.headers.entries is not a function/property`: Build headers with `request.headers.forEach(...)` in `convex/http.ts`.
+- Webhooks route compiles but never updates tables: If `ingestMuxWebhook` is generated as `internalAction`, call it via `internal.muxWebhook.ingestMuxWebhook` (not `anyApi.*`).
 - `Node APIs without "use node"`: Ensure Node runtime files start with `"use node";`.
