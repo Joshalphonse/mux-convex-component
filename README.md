@@ -1,57 +1,30 @@
 # Convex Mux Component
 
-Yo! 
+Yo!
 
-We made a reusable Convex component for apps that use Mux for video and Convex for backend data. We hear from devs and want to make it easier for you to build video apps with a database. Think about it, if you want to build the next TikTok, Instagram, or YouTube, you can use this component to get you started or even migrate your existing data from Mux to Convex and go from there! 
+We made a reusable Convex component for apps that use Mux for video and Convex for backend data. We hear from devs and want to make it easier for you to build video apps with a database. Think about it, if you want to build the next TikTok, Instagram, or YouTube, you can use this component to get you started or even migrate your existing data from Mux to Convex and go from there!
 
-Here's what this component provides:
+This package gives you:
 
 - Convex tables for Mux `assets`, `uploads`, `liveStreams`, and `events`
-- Upsert/delete mutations to keep those tables in sync
+- Mutations to upsert/delete synced Mux objects
 - App-level `videoMetadata` storage (`userId`, title, visibility, tags, custom fields)
 - Query helpers for catalog and user-facing video data
 
-## Runtime Model (important info!)
+## Packages
 
-This package follows Convex component best practices:
+- Component package: `convex-mux-component`
+- App scaffolder package: `convex-mux-init`
 
-- The component package contains only component code (`convex.config.ts`, schema, queries, mutations)
-- Node runtime integration code (Mux SDK calls, webhook verification, backfills) lives in the consuming app
-- No CLI `bin` is shipped in the component package itself
+## Quickstart
 
-This is intentional and avoids bundling/runtime friction in consumer projects.
-
-
-## End-to-End Setup (From Scratch)
-
-## 1) Create a Convex app
+## 1) Install packages
 
 ```sh
-npx create-convex@latest my-video-app
-cd my-video-app
+npm i convex-mux-component convex-mux-init @mux/mux-node
 ```
 
-If you use Bun:
-
-```sh
-bun install
-```
-
-Then start Convex once to provision/select your deployment:
-
-```sh
-npx convex dev
-```
-
-(You can use `bunx convex dev` if you prefer.)
-
-## 2) Install this component
-
-```sh
-npm i convex-mux-component
-```
-
-## 3) Mount the component
+## 2) Mount the component
 
 Create or update `convex/convex.config.ts`:
 
@@ -65,31 +38,18 @@ app.use(mux, { name: "mux" });
 export default app;
 ```
 
-`mux` is your mounted component name. If you use a different name, update all `components.mux...` calls accordingly. So basically if you want your table to be named `muxVideos`, you should mount it as `mux` and use `components.muxVideos` in your code.
-
-## 4) Add app-level wrappers (backfill + webhook)
-
-Use the scaffolder package we provided for you.This is a really fast way to migrate your data from Mux to Convex:
+## 3) Generate app-level wrappers
 
 ```sh
 npx convex-mux-init --component-name mux
 ```
-
-If `convex-mux-init` is not published yet, use the local tarball flow in
-`Optional: Scaffold Package In This Repo`.
 
 This creates:
 
 - `convex/migrations.ts`
 - `convex/muxWebhook.node.ts`
 
-Install Mux SDK in your app (required by generated files):
-
-```sh
-npm i @mux/mux-node
-```
-
-## 5) Add HTTP route for Mux webhook
+## 4) Add webhook HTTP route
 
 Create or update `convex/http.ts`:
 
@@ -119,93 +79,36 @@ http.route({
 export default http;
 ```
 
-## 6) Add Mux credentials to Convex env
-
-You can set env vars from the Convex dashboard or CLI.
-
-Dashboard:
-
-- Open your project in Convex dashboard
-- Go to project/deployment settings for environment variables
-- Add:
-  - `MUX_TOKEN_ID`
-  - `MUX_TOKEN_SECRET`
-
-CLI equivalent:
+## 5) Set Mux API env vars in Convex
 
 ```sh
 npx convex env set MUX_TOKEN_ID <your_mux_token_id>
 npx convex env set MUX_TOKEN_SECRET <your_mux_token_secret>
 ```
 
-## 7) Generate/apply schema and functions
+## 6) Start Convex and run backfill
 
 ```sh
 npx convex dev
-```
-
-This applies component schema and generates `convex/_generated/*`.
-
-## 8) Backfill Mux assets into Convex
-
-Run the generated migration action:
-
-```sh
 npx convex run migrations:backfillMux '{}'
 ```
 
-With options:
+## 7) Configure Mux webhook endpoint
 
-```sh
-npx convex run migrations:backfillMux '{"maxAssets":500,"defaultUserId":"dev-user-1","includeVideoMetadata":true}'
-```
+In Mux dashboard, create a webhook endpoint:
 
-For production deployment:
+- URL for deployed app: `https://<your-deployment>.convex.site/mux/webhook`
+- URL for local-only app: use ngrok/cloudflared tunnel to `/mux/webhook`
 
-```sh
-npx convex run --prod migrations:backfillMux '{"maxAssets":500}'
-```
-
-## Why Webhook URL Is Required
-
-Backfill is a one-time catch-up. It does not keep data fresh.
-
-Mux webhooks are how your app receives ongoing changes in near real time, such as:
-
-- asset status updates (for example `preparing` to `ready`)
-- deletions
-- upload and live stream lifecycle events
-
-Without the webhook URL:
-
-- component tables only update when you run backfill/manual sync
-- video state in Convex will drift from Mux over time
-
-## 9) Configure Mux webhook endpoint
-
-In Mux dashboard:
-
-- Create webhook endpoint
-- URL:
-  - Local testing (with tunnel): `https://<your-tunnel-domain>/mux/webhook`
-  - Deployed Convex app: `https://<your-deployment>.convex.site/mux/webhook`
-- Select desired video events (asset, upload, live stream)
-- Copy signing secret into `MUX_WEBHOOK_SECRET`
-
-Set it via CLI:
+Copy the webhook signing secret and set it in Convex:
 
 ```sh
 npx convex env set MUX_WEBHOOK_SECRET <your_mux_webhook_secret>
 ```
 
-Note:
+## 8) Verify data in Convex dashboard
 
-- If you use deployed Convex URL, you do not need ngrok.
-- If your app is only local and not publicly reachable, use ngrok/cloudflared.
-
-## 10) Verify data
-
-In Convex dashboard data tables, you should see:
+Tables to check:
 
 - `assets`
 - `uploads`
@@ -213,50 +116,64 @@ In Convex dashboard data tables, you should see:
 - `events`
 - `videoMetadata`
 
-## Local Testing This Package Before Publish
+## Why Both Backfill and Webhook?
 
-From this component repo:
+- Backfill is one-time catch-up for existing Mux objects.
+- Webhooks keep your Convex tables updated in near real time as Mux state changes.
 
-```sh
-npm pack --cache /tmp/npm-cache
+Without webhooks, data will drift over time.
+
+## Runtime Model
+
+This is intentional and follows Convex component best practices:
+
+- `convex-mux-component` is component-only (schema, queries, mutations)
+- Node runtime integration (Mux SDK, webhook verify, backfill) is app-level code in your project
+- `convex-mux-init` scaffolds those app-level files
+
+## If You Use a Different Component Name
+
+If you mount with a different name, for example:
+
+```ts
+app.use(mux, { name: "videoInfra" });
 ```
 
-In a separate consumer app:
+then regenerate wrappers with matching name:
 
 ```sh
-npm i /absolute/path/to/convex-mux-component-0.1.6.tgz
-npx convex dev
+npx convex-mux-init --component-name videoInfra --force
 ```
 
-## Optional: Scaffold Package In This Repo
-
-The separate scaffolder lives in `scaffold/` and should be published as its own package (`convex-mux-init`).
-
-Build/test locally:
+## Common Commands
 
 ```sh
-cd scaffold
-npm pack --cache /tmp/npm-cache
+# regenerate wrappers
+npx convex-mux-init --component-name mux --force
+
+# run backfill with options
+npx convex run migrations:backfillMux '{"maxAssets":500,"defaultUserId":"dev-user-1","includeVideoMetadata":true}'
+
+# run against prod deployment
+npx convex run --prod migrations:backfillMux '{"maxAssets":500}'
 ```
 
-Then run in consumer app:
+## Agent Checklist
 
-```sh
-npm exec --yes --package /absolute/path/to/convex-mux-init-0.1.0.tgz convex-mux-init -- --component-name mux
-```
+Use this order when automating setup:
+
+1. `npm i convex-mux-component convex-mux-init @mux/mux-node`
+2. Ensure `convex/convex.config.ts` mounts `convex-mux-component/convex.config.js`
+3. Run `npx convex-mux-init --component-name <mounted_name> --force`
+4. Ensure `convex/http.ts` routes `POST /mux/webhook` to `internal.muxWebhook.ingestMuxWebhook`
+5. Set `MUX_TOKEN_ID` and `MUX_TOKEN_SECRET`
+6. Run `npx convex dev`
+7. Run `npx convex run migrations:backfillMux '{}'`
+8. Configure Mux webhook URL and set `MUX_WEBHOOK_SECRET`
 
 ## Troubleshooting
 
-- `Could not find function for 'migrations:backfillMux'`
-  - Ensure `convex/migrations.ts` exists and exports `backfillMux`
-  - Run `npx convex dev` again
-
-- `InvalidReference ... does not export [mux_node.backfillAssets]`
-  - Do not call `components.<name>.mux_node.*`
-  - Use app-level Node actions (`convex/migrations.ts`, `convex/muxWebhook.node.ts`) and call `components.<name>.sync.*Public`
-
-- `TypeScript ... webhooks.unwrap ... Record<string, unknown>`
-  - Use `const event = mux.webhooks.unwrap(...) as unknown as Record<string, unknown>;`
-
-- `It looks like you are using Node APIs from a file without the "use node" directive`
-  - Add `"use node";` at the top of files that use Mux SDK/Node APIs
+- `Could not find function for 'migrations:backfillMux'`: Ensure `convex/migrations.ts` exists, exports `backfillMux`, then run `npx convex dev`.
+- `InvalidReference ... does not export [mux_node.backfillAssets]`: Do not call `components.<name>.mux_node.*`; use app-level wrappers from `convex-mux-init`.
+- `TypeScript ... webhooks.unwrap ... Record<string, unknown>`: Regenerate wrappers with `--force` using latest `convex-mux-init`; expected cast is `as unknown as Record<string, unknown>`.
+- `Node APIs without "use node"`: Ensure Node runtime files start with `"use node";`.
