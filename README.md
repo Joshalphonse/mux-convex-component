@@ -1,4 +1,6 @@
-# Convex Mux Component
+# Mux Convex Component
+
+![Mux Convex Component](public/buff.png)
 
 Yo!
 
