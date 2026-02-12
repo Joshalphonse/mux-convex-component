@@ -1,6 +1,6 @@
 {
   "name": "convex-mux-component",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "Convex Component for syncing Mux video data and app metadata.",
   "type": "module",
   "keywords": [
