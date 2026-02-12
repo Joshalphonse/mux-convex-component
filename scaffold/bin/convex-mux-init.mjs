@@ -26,7 +26,7 @@ Options:
   --skip-config            Do not create convex/convex.config.ts
   --skip-http              Do not create convex/http.ts
   --skip-migration         Do not create convex/migrations.ts
-  --skip-webhook           Do not create convex/muxWebhook.node.ts
+  --skip-webhook           Do not create convex/muxWebhook.ts
   -h, --help               Show help
 `);
 }
@@ -92,8 +92,7 @@ import { action } from "./_generated/server";
 import { components } from "./_generated/api";
 import { v } from "convex/values";
 
-function env(name: string): string {
-  const value = process.env[name];
+function requiredEnv(name: string, value: string | undefined): string {
   if (!value) throw new Error(\`Missing env var: \${name}\`);
   return value;
 }
@@ -106,8 +105,8 @@ export const backfillMux = action({
   },
   handler: async (ctx, args) => {
     const mux = new Mux({
-      tokenId: env("MUX_TOKEN_ID"),
-      tokenSecret: env("MUX_TOKEN_SECRET"),
+      tokenId: requiredEnv("MUX_TOKEN_ID", process.env.MUX_TOKEN_ID),
+      tokenSecret: requiredEnv("MUX_TOKEN_SECRET", process.env.MUX_TOKEN_SECRET),
     });
 
     const maxAssets = Math.max(1, Math.floor(args.maxAssets ?? 200));
@@ -167,8 +166,7 @@ import { internalAction } from "./_generated/server";
 import { components } from "./_generated/api";
 import { v } from "convex/values";
 
-function env(name: string): string {
-  const value = process.env[name];
+function requiredEnv(name: string, value: string | undefined): string {
   if (!value) throw new Error(\`Missing env var: \${name}\`);
   return value;
 }
@@ -198,7 +196,12 @@ export const ingestMuxWebhook = internalAction({
     headers: v.record(v.string(), v.string()),
   },
   handler: async (ctx, args) => {
-    const mux = new Mux({ webhookSecret: env("MUX_WEBHOOK_SECRET") });
+    const mux = new Mux({
+      webhookSecret: requiredEnv(
+        "MUX_WEBHOOK_SECRET",
+        process.env.MUX_WEBHOOK_SECRET
+      ),
+    });
     const event = mux.webhooks.unwrap(
       args.rawBody,
       normalizeHeaders(args.headers)
@@ -312,16 +315,18 @@ if (!skipMigration) {
 
 if (!skipWebhook) {
   wroteAny =
-    writeFile("muxWebhook.node.ts", webhookTemplate(componentName)) || wroteAny;
+    writeFile("muxWebhook.ts", webhookTemplate(componentName)) || wroteAny;
 }
 
 if (!skipHttp) {
   const webhookImplementationExists =
-    !skipWebhook || fs.existsSync(path.join(convexDir, "muxWebhook.node.ts"));
+    !skipWebhook ||
+    fs.existsSync(path.join(convexDir, "muxWebhook.ts")) ||
+    fs.existsSync(path.join(convexDir, "muxWebhook.node.ts"));
 
   if (!webhookImplementationExists) {
     console.log(
-      "skip convex/http.ts (--skip-webhook used and convex/muxWebhook.node.ts was not found)",
+      "skip convex/http.ts (--skip-webhook used and no convex/muxWebhook.ts was found)",
     );
   } else {
     wroteAny = writeFile("http.ts", httpTemplate()) || wroteAny;

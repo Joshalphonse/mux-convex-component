@@ -36,7 +36,7 @@ This creates:
 
 - `convex/convex.config.ts`
 - `convex/migrations.ts`
-- `convex/muxWebhook.node.ts`
+- `convex/muxWebhook.ts`
 - `convex/http.ts`
 
 If files already exist, the CLI skips them unless you pass `--force`.

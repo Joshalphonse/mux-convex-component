@@ -11,7 +11,7 @@ This CLI creates those app files for you:
 
 - `convex/convex.config.ts`
 - `convex/migrations.ts`
-- `convex/muxWebhook.node.ts`
+- `convex/muxWebhook.ts`
 - `convex/http.ts`
 
 ## Usage
