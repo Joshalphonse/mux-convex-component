@@ -55,3 +55,19 @@ npx convex env set MUX_WEBHOOK_SECRET <secret>
 npx convex dev
 npx convex run migrations:backfillMux '{}'
 ```
+
+## Video Metadata From Upload Flow
+
+Generated webhook/backfill code can auto-upsert `videoMetadata` from Mux asset
+`passthrough`.
+
+- If `passthrough` is a plain string, it is treated as `userId`.
+- If `passthrough` is JSON, it may include:
+  `userId` (or `user_id`), `title`, `description`, `tags`, `visibility`,
+  and `custom`.
+
+Example:
+
+```json
+{"userId":"user_123","title":"My clip","visibility":"public"}
+```
