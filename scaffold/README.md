@@ -1,8 +1,30 @@
 # convex-mux-init
 
-Scaffold app-level Convex files for `convex-mux-component`.
+> **Deprecated:** This package has been merged into `@mux/convex`. Use `npx @mux/convex init` instead.
 
-## Purpose
+## Migration
+
+Replace:
+
+```sh
+npx convex-mux-init [options]
+```
+
+With:
+
+```sh
+npx @mux/convex init [options]
+```
+
+All options (`--component-name`, `--force`, `--skip-config`, etc.) work the same way.
+
+---
+
+## Legacy Usage
+
+Scaffold app-level Convex files for `@mux/convex`.
+
+### Purpose
 
 Convex component packages should stay component-only. App-specific Node wrappers
 for backfills and webhooks belong in the consuming app.
@@ -14,7 +36,7 @@ This CLI creates those app files for you:
 - `convex/muxWebhook.ts`
 - `convex/http.ts`
 
-## Usage
+### Usage
 
 Run in your app root (the folder that contains `convex/`):
 
@@ -33,7 +55,7 @@ npx convex-mux-init --skip-migration
 npx convex-mux-init --skip-webhook
 ```
 
-## Next Steps After Scaffolding
+### Next Steps After Scaffolding
 
 1. Install Mux SDK in your app:
 
@@ -56,7 +78,7 @@ npx convex dev
 npx convex run migrations:backfillMux '{}'
 ```
 
-## Video Metadata From Upload Flow
+### Video Metadata From Upload Flow
 
 Generated webhook/backfill code can auto-upsert `videoMetadata` from Mux asset
 `passthrough`.
