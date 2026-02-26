@@ -1,7 +1,8 @@
 {
   "name": "convex-mux-init",
-  "version": "0.1.4",
-  "description": "Scaffold app-level Convex wrappers for convex-mux-component.",
+  "version": "0.2.0",
+  "deprecated": "Use npx @mux/convex init instead.",
+  "description": "Scaffold app-level Convex wrappers for @mux/convex.",
   "type": "module",
   "bin": {
     "convex-mux-init": "bin/convex-mux-init.mjs"
