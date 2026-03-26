@@ -3,15 +3,15 @@
   "version": "0.2.0",
   "description": "Convex Component for syncing Mux video data and app metadata.",
   "type": "module",
+  "workspaces": [
+    "scaffold"
+  ],
   "keywords": [
     "convex",
     "mux",
     "component",
     "video"
   ],
-  "bin": {
-    "mux-convex": "./bin/cli.mjs"
-  },
   "files": [
     "README.md",
     "convex.config.ts",
@@ -21,8 +21,7 @@
     "catalog.ts",
     "_generated/api.ts",
     "_generated/server.ts",
-    "_generated/dataModel.ts",
-    "bin/"
+    "_generated/dataModel.ts"
   ],
   "exports": {
     "./convex.config": "./convex.config.ts",
@@ -43,8 +42,7 @@
     "./_generated/dataModel.js": "./_generated/dataModel.ts"
   },
   "scripts": {
-    "codegen": "convex codegen --component-dir .",
-    "typecheck": "convex codegen --component-dir . && tsc --noEmit"
+    "typecheck": "tsc --noEmit"
   },
   "publishConfig": {
     "access": "public"

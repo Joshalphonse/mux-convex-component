@@ -1,27 +1,5 @@
 # convex-mux-init
 
-> **Deprecated:** This package has been merged into `@mux/convex`. Use `npx @mux/convex init` instead.
-
-## Migration
-
-Replace:
-
-```sh
-npx convex-mux-init [options]
-```
-
-With:
-
-```sh
-npx @mux/convex init [options]
-```
-
-All options (`--component-name`, `--force`, `--skip-config`, etc.) work the same way.
-
----
-
-## Legacy Usage
-
 Scaffold app-level Convex files for `@mux/convex`.
 
 ### Purpose
@@ -34,26 +12,42 @@ This CLI creates those app files for you:
 - `convex/convex.config.ts`
 - `convex/migrations.ts`
 - `convex/muxWebhook.ts`
-- `convex/http.ts`
+- `convex/muxHttp.ts`
+- `convex/http.ts` if your app does not already have one
 
-### Usage
+### Install and usage
+
+Install the runtime packages in your app:
+
+```sh
+npm i @mux/convex @mux/mux-node
+```
+
+Then run the scaffold CLI with `npx`, or install it as a dev dependency if you
+prefer.
 
 Run in your app root (the folder that contains `convex/`):
 
 ```sh
-npx convex-mux-init
+npx convex-mux-init@latest --component-name mux
+
+# or
+npm i -D convex-mux-init
+npx convex-mux-init --component-name mux
 ```
 
 Options:
 
 ```sh
-npx convex-mux-init --component-name mux
+npx convex-mux-init@latest --component-name mux
 npx convex-mux-init --force
 npx convex-mux-init --skip-config
 npx convex-mux-init --skip-http
 npx convex-mux-init --skip-migration
 npx convex-mux-init --skip-webhook
 ```
+
+Existing `convex/http.ts` is never overwritten, even with `--force`.
 
 ### Next Steps After Scaffolding
 
@@ -63,7 +57,15 @@ npx convex-mux-init --skip-webhook
 npm i @mux/mux-node
 ```
 
-2. Set env vars in Convex:
+2. If your app already had `convex/http.ts`, add the generated helper:
+
+```ts
+import { registerMuxHttpRoutes } from "./muxHttp";
+
+registerMuxHttpRoutes(http);
+```
+
+3. Set env vars in Convex:
 
 ```sh
 npx convex env set MUX_TOKEN_ID <id>
@@ -71,7 +73,7 @@ npx convex env set MUX_TOKEN_SECRET <secret>
 npx convex env set MUX_WEBHOOK_SECRET <secret>
 ```
 
-3. Run:
+4. Run:
 
 ```sh
 npx convex dev

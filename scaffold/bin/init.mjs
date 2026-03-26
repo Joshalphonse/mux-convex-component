@@ -2,18 +2,18 @@ import fs from "node:fs";
 import path from "node:path";
 
 function printHelp() {
-  console.log(`npx @mux/convex init
+  console.log(`npx convex-mux-init
 
 Scaffold app-level Convex wrappers for @mux/convex.
 
 Usage:
-  npx @mux/convex init [options]
+  npx convex-mux-init [options]
 
 Options:
   --component-name <name>  Mounted component name in convex.config.ts (default: mux)
-  --force                  Overwrite existing files
+  --force                  Overwrite existing generated files except convex/http.ts
   --skip-config            Do not create convex/convex.config.ts
-  --skip-http              Do not create convex/http.ts
+  --skip-http              Do not create convex/muxHttp.ts or convex/http.ts
   --skip-migration         Do not create convex/migrations.ts
   --skip-webhook           Do not create convex/muxWebhook.ts
   -h, --help               Show help
@@ -315,36 +315,63 @@ export const ingestMuxWebhook = internalAction({
 `;
 }
 
-function httpTemplate() {
+function muxHttpTemplate() {
   return `import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 
+export function registerMuxHttpRoutes(http: ReturnType<typeof httpRouter>) {
+  http.route({
+    path: "/mux/webhook",
+    method: "POST",
+    handler: httpAction(async (ctx, request) => {
+      const rawBody = await request.text();
+      const headers: Record<string, string> = {};
+      request.headers.forEach((value, key) => {
+        headers[key] = value;
+      });
+
+      const result = await ctx.runAction(internal.muxWebhook.ingestMuxWebhook, {
+        rawBody,
+        headers,
+      });
+
+      return new Response(JSON.stringify(result), {
+        headers: { "content-type": "application/json" },
+      });
+    }),
+  });
+}
+`;
+}
+
+function httpTemplate() {
+  return `import { httpRouter } from "convex/server";
+import { registerMuxHttpRoutes } from "./muxHttp";
+
 const http = httpRouter();
 
-http.route({
-  path: "/mux/webhook",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    const rawBody = await request.text();
-    const headers: Record<string, string> = {};
-    request.headers.forEach((value, key) => {
-      headers[key] = value;
-    });
-
-    const result = await ctx.runAction(internal.muxWebhook.ingestMuxWebhook, {
-      rawBody,
-      headers,
-    });
-
-    return new Response(JSON.stringify(result), {
-      headers: { "content-type": "application/json" },
-    });
-  }),
-});
+registerMuxHttpRoutes(http);
 
 export default http;
 `;
+}
+
+function writeBootstrapHttpFile(cwd, convexDir, content) {
+  const absPath = path.join(convexDir, "http.ts");
+  if (fs.existsSync(absPath)) {
+    console.log(
+      `skip ${path.relative(
+        cwd,
+        absPath,
+      )} (already exists; add registerMuxHttpRoutes(http) to your router)`,
+    );
+    return false;
+  }
+
+  fs.writeFileSync(absPath, content, "utf8");
+  console.log(`write ${path.relative(cwd, absPath)}`);
+  return true;
 }
 
 export function runInit(args) {
@@ -408,6 +435,8 @@ export function runInit(args) {
     return true;
   }
 
+  const hadHttpFile = fs.existsSync(path.join(convexDir, "http.ts"));
+
   let wroteAny = false;
 
   if (!skipConfig) {
@@ -434,10 +463,15 @@ export function runInit(args) {
 
     if (!webhookImplementationExists) {
       console.log(
+        "skip convex/muxHttp.ts (--skip-webhook used and no convex/muxWebhook.ts was found)",
+      );
+      console.log(
         "skip convex/http.ts (--skip-webhook used and no convex/muxWebhook.ts was found)",
       );
     } else {
-      wroteAny = writeFile("http.ts", httpTemplate()) || wroteAny;
+      wroteAny = writeFile("muxHttp.ts", muxHttpTemplate()) || wroteAny;
+      wroteAny =
+        writeBootstrapHttpFile(cwd, convexDir, httpTemplate()) || wroteAny;
     }
   }
 
@@ -453,8 +487,12 @@ export function runInit(args) {
   }
   if (skipHttp) {
     nextSteps.push(
-      `Ensure convex/http.ts routes POST /mux/webhook to internal.muxWebhook.ingestMuxWebhook`,
+      `Ensure convex/http.ts serves POST /mux/webhook and calls internal.muxWebhook.ingestMuxWebhook`,
     );
+  } else if (hadHttpFile) {
+    nextSteps.push(`Add Mux routes to your existing convex/http.ts
+   import { registerMuxHttpRoutes } from "./muxHttp";
+   registerMuxHttpRoutes(http)`);
   }
   nextSteps.push(`Set env vars in Convex
    npx convex env set MUX_TOKEN_ID <id>
