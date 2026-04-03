@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 function printHelp() {
-  console.log(`npx convex-mux-init
+  console.log(`npx @mux/convex-mux-init
 
 Scaffold app-level Convex wrappers for @mux/convex.
 

@@ -8,31 +8,31 @@ This package gives you:
 - Mutations to upsert/delete synced Mux objects
 - App-level `videoMetadata` storage (`userId`, title, visibility, tags, custom fields)
 - Query helpers for catalog and user-facing video data
-- A separate companion CLI to scaffold app-level Convex wrappers (`npx convex-mux-init`)
+- A separate companion CLI package, `@mux/convex-mux-init`, to scaffold app-level Convex wrappers (`npx convex-mux-init`)
 
 ## Quickstart
 
-### 1) Install runtime packages
+### 1) Install packages
 
 ```sh
 npm i @mux/convex @mux/mux-node
+npm i -D @mux/convex-mux-init
 ```
 
-Use the separate scaffold CLI with `npx`, or install it as a dev dependency if
-you prefer:
+If you prefer not to install the scaffold CLI, you can run it directly with
+`npx`:
 
 ```sh
-npx convex-mux-init@latest --component-name mux
-
-# or
-npm i -D convex-mux-init
-npx convex-mux-init --component-name mux
+npx @mux/convex-mux-init@latest --component-name mux
 ```
 
 ### 2) Generate app-level Convex files
 
 ```sh
-npx convex-mux-init@latest --component-name mux
+npx convex-mux-init --component-name mux
+
+# or without installing it
+npx @mux/convex-mux-init@latest --component-name mux
 ```
 
 This creates:
@@ -115,7 +115,7 @@ This follows Convex component best practices:
 
 - `@mux/convex` is component-only (schema, queries, mutations)
 - Node runtime integration (Mux SDK, webhook verification, backfill) lives in app-level code in your project
-- `convex-mux-init` is a separate CLI package that scaffolds those app-level files for you
+- `@mux/convex-mux-init` is the separate CLI package that scaffolds those app-level files for you
 
 ## Using a different component name
 
@@ -152,4 +152,4 @@ npx convex run --prod migrations:backfillMux '{"maxAssets":500}'
 - **TypeScript `request.headers.entries is not a function/property`**: Build headers with `request.headers.forEach(...)` in `convex/muxHttp.ts`.
 - **Webhooks route compiles but never updates tables**: If `ingestMuxWebhook` is generated as `internalAction`, call it via `internal.muxWebhook.ingestMuxWebhook` (not `anyApi.*`).
 - **`Node APIs without "use node"`**: Ensure Node runtime files start with `"use node";`.
-- **Bundling fails on `node:fs` / `node:path` from `@mux/convex/bin/*`**: Upgrade to the split packages and use `convex-mux-init` as the separate scaffold CLI.
+- **Bundling fails on `node:fs` / `node:path` from `@mux/convex/bin/*`**: Upgrade to the split packages and use `@mux/convex-mux-init` as the separate scaffold CLI.

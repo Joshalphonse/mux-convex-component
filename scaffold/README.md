@@ -1,4 +1,4 @@
-# convex-mux-init
+# @mux/convex-mux-init
 
 Scaffold app-level Convex files for `@mux/convex`.
 
@@ -29,17 +29,17 @@ prefer.
 Run in your app root (the folder that contains `convex/`):
 
 ```sh
-npx convex-mux-init@latest --component-name mux
+npx @mux/convex-mux-init@latest --component-name mux
 
 # or
-npm i -D convex-mux-init
+npm i -D @mux/convex-mux-init
 npx convex-mux-init --component-name mux
 ```
 
 Options:
 
 ```sh
-npx convex-mux-init@latest --component-name mux
+npx @mux/convex-mux-init@latest --component-name mux
 npx convex-mux-init --force
 npx convex-mux-init --skip-config
 npx convex-mux-init --skip-http
